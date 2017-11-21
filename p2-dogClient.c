@@ -46,81 +46,45 @@ void showMenu(int clientfd) {
   int sel = 0, r, confirmation, total_reg, num_reg, error = -1, val, i, control, a, exit_;
   char search[32];
 
-  printf("\n\t\t:::::::::      MENU DE GESTION DE LA VETERINARIA 2.0       ::::::::\n\n\n");
-
-  printf("\t\t    #####    \t\t  #                 #        \n");
-  printf("\t\t  #########  \t\t  ##               ##        \n");
-  printf("\t\t ########### \t\t  ###             ###        \n");
-  printf("\t\t#############\t\t  ###################        \n");
-  printf("\t\t#############\t\t  ###  #######  #####        \n");
-  printf("\t\t#############\t\t   #################         \n");
-  printf("\t\t ########### \t\t   #######  ########         \n");
-  printf("\t\t  #########  \t\t   ######    #######         \n");
-  printf("\t\t   #######   \t\t   #################         \n");
-  printf("\t\t      ..     \t\t   #####      ######         \n");
-  printf("\t\t     ..      \t\t   #################         \n");
-  printf("\t\t    ..       \t\t    ###############          \n");
-  printf("\t\t    ..       \t\t    #####    ######          \n");
-  printf("\t\t     ..      \t\t    ######  #######          \n");
-  printf("\t\t      ..     \t\t   ######    #######         \n");
-  printf("\t\t       ..    \t\t  #######    ########        \n");
-  printf("\t\t       ..    \t\t  #######    ########        \n");
-  printf("\t\t      ..     \t\t  #######    ########        \n");
-  printf("\t\t     ..      \t\t  #######    ########        \n");
-  printf("\t\t     ..      \t\t  #######    ########        \n");
-  printf("\t\t     ..      \t\t  ###################        \n");
-  printf("\t\t     ..      \t\t   #################         \n");
-  printf("\t\t             \t\t    ###############          \n");
-  printf("\t\t             \t\t   #################         \n");
-  printf("\t\t             \t\t  ##  #  ####   #  ##        \n");
-  printf("\t\t             \t\t  ## ### ##### ### ##        \n");
-  printf("1. Ingresar Registro\n");
-  printf("2. Ver Registro\n");
-  printf("3. Borrar Registro\n");
-  printf("4. Buscar Registro\n");
-  printf("5. Salir\n\n\n");
+  printf("\n\t\t----      Menu      ----\n\n\n");
+  printf("\t1. Ingresar Registro\n");
+  printf("\t2. Ver Registro\n");
+  printf("\t3. Borrar Registro\n");
+  printf("\t4. Buscar Registro\n");
+  printf("\t5. Salir\n\n\n");
   printf("Por favor ingrese el numero de la opcion que desea ejecutar y presione Enter: ");
   fflush(stdout);
   scanf("%d", &sel);
 
   r = send(clientfd, &sel, sizeof(int), 0);
   if(r == -1) {
-    perror("Send error 1");
+    perror("Send perror");
     exit(-1);
   }
-
-
-
-
-  if(sel == 1) {          //opcion de ingresar registro
+//option create a new register
+  if(sel == 1) {          
     struct dogType *dog;
     dog = malloc(sizeof(struct dogType));
-
     enterRegistry(dog);
-
     r = send(clientfd, dog, sizeof(struct dogType), 0);
     if(r == -1) {
-      perror("Send error 2");
+      perror("Send perror opcion 1");
       exit(-1);
     }
 
     r = recv(clientfd, &confirmation, sizeof(int), 0);
     if(r != sizeof(int)){
-      perror("Recv error 1");
+      perror("Recv perror opcion 1");
       exit(-1);
     }
 
     if(confirmation == 1) {
-      printf("\n\n- Su registro ha sido guardado con exito!\n\n\n");
+      printf("\n\nregistro ha sido guardado con exito\n\n");
     }
-
     free(dog);
   }
-
-
-
-
-  else if(sel == 2) {          //opcion de ver registro
+//option view register use id
+  else if(sel == 2) {          
     struct dogType *dog;
     dog = malloc(sizeof(struct dogType));
     bool want_clin_hist;
@@ -128,22 +92,22 @@ void showMenu(int clientfd) {
 
     r = recv(clientfd, &total_reg, sizeof(int), 0);
     if(r != sizeof(int)){
-      perror("Recv error 2");
+      perror("Recv perror opcion 2");
       exit(-1);
     }
 
     if(total_reg == 0) {
-      printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-      printf("\n\n- Lo sentimos! Aun no se ha ingresado algun registro en el sistema.\n");
+      printf("\nMensaje");
+      printf("\n\nEl sistema no tiene ningun registro, lo invitamos a crear uno.\n");
       r = send(clientfd, &error, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 4");
+        perror("Send perror opcion 2 registro");
         exit(-1);
       }
 
     } else {
-      printf("\n\n::::::::::::::::::::::::::::::::::  Cantidad de registros en el sistema:  %d  :::::::::::::::::::::::::::::::::::::::\n", total_reg);
-      printf("\n\n- Ingrese el numero del registro que desea consultar: ");
+      printf("\n\nCantidad registros del sistema:\t   %d  \n", total_reg);
+      printf("\n\nIngrese el numero del registro que desea consultar: ");
       scanf("%d", &num_reg);
       if(num_reg >= 1 && num_reg <= total_reg)
         val = 1;
@@ -151,16 +115,16 @@ void showMenu(int clientfd) {
         val = 0;
 
       if(val != 0) {
-        r = send(clientfd, &num_reg, sizeof(int), 0); //envía el registro a consultar
+        r = send(clientfd, &num_reg, sizeof(int), 0); //sent search register
         if(r == -1) {
-          perror("Send error 5");
+          perror("Send perror del reigstro a consultar");
           exit(-1);
         }
-        printf("\n\n\n::::::::::::::::::::::::::::::::::::::::::::  Mostrando registro N°  %d  :::::::::::::::::::::::::::::::::::::::::::\n", num_reg);
+        printf("\n\n\nEl registro numero\t  %d \n", num_reg);
 
         r = recv(clientfd, dog, sizeof(struct dogType), 0);
         if(r != sizeof(struct dogType)) {
-          perror("Recv error 3");
+          perror("Recv perror clientfd");
           exit(-1);
         }
         showRegs(dog);
@@ -168,18 +132,20 @@ void showMenu(int clientfd) {
         want_clin_hist = wantClinicalHistory();
         r = send(clientfd, &want_clin_hist, sizeof(bool), 0);
         if(r == -1) {
-          perror("Send error 6");
+          perror("Send perror historia clinica lista");
           exit(-1);
         }
 
         if(want_clin_hist) {
-          r = recv(clientfd, &fileSize, sizeof(int), 0); //recibe el tamaño de la historia clinica
-          while(fileSize == -1) { //Mientras que la hisoria cínica esté ocupada, espere
-            printf("La historia clínica ha sido abierta por otro cliente. Espere unos minutos.\n");
-            printf(">> Esperando a que la historia clínica deje de ser editada .............................\n");
+          //size of clinical history 
+          r = recv(clientfd, &fileSize, sizeof(int), 0); 
+          while(fileSize == -1) { 
+          //if the clinical history is open, wait until it
+            printf("La historia clinica ha sido abierta por otro cliente. Espere un rato\n");
+            printf("---Esperando a que la historia clinica termine de editarse---\n");
             r = recv(clientfd, &fileSize, sizeof(int), 0);
             if(r != sizeof(int)) {
-              perror("Recv error 45");
+              perror("Recv perror historia clinica abierta");
               exit(-1);
             }
           }
@@ -189,27 +155,30 @@ void showMenu(int clientfd) {
 
           if(fileSize != 0) {
             char tmp;
-            for (i = 0; i < fileSize; i++) { //lee la historia clinica caracter por caracter
+            //read history charter by charter
+            for (i = 0; i < fileSize; i++) { 
               r = recv(clientfd, &tmp, sizeof(char), 0);
               if(r != sizeof(char)) {
-                perror("Recv error 4");
+                perror("Recv perror leyendo historia clinica");
                 exit(-1);
               }
               strcat(clinicalHistory, &tmp);
             }
           }
-          printf("\n\n\n>> La historia clínica está lista ser editada .......................................\n");
-          printf(">> Abriendo la historia clinica .........................................................\n");
+          printf("\n\n\n----La historia clinica esta lista ser editada----\n");
+          printf("----Abriendo la historia clinica----\n");
           sleep(1);
-          openClinicalHistory(num_reg, dog, clinicalHistory, fileSize); //crea y abre la historia clinica localmente
-
+          openClinicalHistory(num_reg, dog, clinicalHistory, fileSize); 
+          //create and open local history
           FILE *a = fopen("historiaClinica.txt", "r");
           fseek(a, 0, SEEK_END);
           fileSize = ftell(a);
           fseek(a, 0, SEEK_SET);
-          r = send(clientfd, &fileSize, sizeof(int), 0); //envia el tamaño de la historia clinica
+          r = send(clientfd, &fileSize, sizeof(int), 0); 
+          //sent size of history 
 
-          if(fileSize != 0) { //envia la historia clinica caracter por caracter
+          if(fileSize != 0) {
+             //send history charter by charter
             char tmp;
             for (i = 0; i < fileSize; i++) {
               r = fread(&tmp, 1, 1, a);
@@ -218,10 +187,9 @@ void showMenu(int clientfd) {
                 perror("fread error getClinicalHistory 2");
                 exit(-1);
               }
-              // printf("%c\n", tmp);
               r = send(clientfd, &tmp, sizeof(char), 0);
               if(r == -1) {
-                perror("Send error 4");
+                perror("Send perror de la historia clinica");
                 exit(-1);
               }
             }
@@ -230,11 +198,11 @@ void showMenu(int clientfd) {
           system("rm historiaClinica.txt");
         }
       } else {
-        printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-        printf("\n\n- ¡Ha ingresado un número de registro incorrecto! Por favor ingrese un número entre 1 y %d\n", total_reg);
+        printf("\n----     MENSAJE     ----");
+        printf("\n\n- ingreso un numero incorrecto. Por favor ingrese un numero de 1 a %d\n", total_reg);
         r = send(clientfd, &error, sizeof(int), 0);
         if(r == -1){
-          perror("Send error 7");
+          perror("Send perror numero registro");
           exit(-1);
         }
       }
@@ -246,8 +214,8 @@ void showMenu(int clientfd) {
 
 
 
-  else if(sel == 3) {          //opcion de borrar registro
-
+  else if(sel == 3) {          
+//option delete register
     r = recv(clientfd, &total_reg, sizeof(int), 0);
     if(r != sizeof(int)) {
       perror("Recv error 4");
@@ -255,17 +223,17 @@ void showMenu(int clientfd) {
     }
 
     if(total_reg == 0) {
-      printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-      printf("\n\n- Lo sentimos! Aun no se ha ingresado algun registro en el sistema.\n");
+      printf("\n----      Menu      ----");
+      printf("\n\n- Lo sentimos. Aun no se ha ingresado algun registro en el sistema\n");
       r = send(clientfd, &error, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 7");
+        perror("Send perror registro");
         exit(-1);
       }
     } else {
 
-      printf("\n\n::::::::::::::::::::::::::::::::::Cantidad de registros en el sistema:  %d :::::::::::::::::::::::::::::::::::::::\n", total_reg);
-      printf("\n\n- Ingrese el numero del registro que desea borrar: ");
+      printf("\n\n----      registro  %d  ----\n", total_reg);
+      printf("\n\nIngrese el numero del registro que desea borrar: ");
       scanf("%d", &num_reg);
       if(num_reg >= 1 && num_reg <= total_reg)
         val = 1;
@@ -275,7 +243,7 @@ void showMenu(int clientfd) {
       if(val != 0) {
         r = send(clientfd, &num_reg, sizeof(int), 0);
         if(r == -1){
-          perror("Send error 8");
+          perror("Send perror registro");
           exit(-1);
         }
         r = recv(clientfd, &confirmation, sizeof(int), 0);
@@ -284,61 +252,58 @@ void showMenu(int clientfd) {
           exit(-1);
         }
         if(confirmation == 1) {
-          printf("\n:::::::::::::::::::::::::::::::::::::::::::::CONFIRMACION DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::");
-          printf("\n\n\n- Su registro ha sido eliminado con exito!\n\n\n");
+          printf("\nInformacion borrado");
+          printf("\n\n\nSu registro ha sido eliminado con exito\n\n\n");
         }
 
       } else {
         r = send(clientfd, &error, sizeof(int), 0);
         if(r == -1){
-          perror("Send error 9");
+          perror("Send perror borrar registro");
           exit(-1);
         }
-        printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-        printf("\n\n- ¡Ha ingresado un número de registro incorrecto! Por favor ingrese un número entre 1 y %d\n", total_reg);
+        printf("\n---- Mensaje  ----");
+        printf("\n\nHa ingresado un número de registro incorrecto, por favor ingrese un numero de 1 a %d\n", total_reg);
       }
     }
 
   }
-
-
-
-
-  else if(sel == 4) {          //opcion de buscar registro
+         //opction search register
+  else if(sel == 4) { 
     struct dogType *dog;
     dog = malloc(sizeof(struct dogType));
     r = recv(clientfd, &total_reg, sizeof(int), 0);
     if(r != sizeof(int)) {
-      perror("Recv error 6");
+      perror("Recv perror buscar registro");
       exit(-1);
     }
 
     if(total_reg != 0) {
       r = send(clientfd, &total_reg, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 10");
+        perror("Send perror buscar registro");
         exit(-1);
       }
-      printf("\n- Ingrese el registro que quiere buscar: \n\n");
+      printf("\nIngrese el registro que quiere buscar:\n\n");
       scanf("%s", search);
       r = send(clientfd, search, sizeof(search), 0);
       if(r == -1) {
-        perror("Send error 11");
+        perror("Send perror registro a buscar");
         exit(-1);
       }
       a = 1;
-      printf("\n::::::::::::::::::::::::::::::::::::::::::RESULTADOS DE LA BUSQUEDA:::::::::::::::::::::::::::::::::::::::::::::::::::\n\n\n");
+      printf("\n---- Busquedad ----\n\n\n");
       while(a == 1) {
         r = recv(clientfd, &i, sizeof(int), 0);
         if(r != sizeof(int)) {
-          perror("Recv error 7");
+          perror("Recv perror busquedad");
           exit(-1);
         }
         if(i != -1) {
 
           r = recv(clientfd, dog, sizeof(struct dogType), 0);
           if(r != sizeof(struct dogType)){
-            perror("Recv error 8");
+            perror("Recv perror busquedad");
             exit(-1);
           }
 
@@ -350,7 +315,7 @@ void showMenu(int clientfd) {
           printf("Estatura (cm):  %i\n", dog->height);
           printf("Peso (kg):  %0.1f\n", dog->weight);
           printf("Sexo:  %c\n\n", dog->sex);
-          printf("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n");
+          printf("----------\n");
           control++;
         }
 
@@ -361,53 +326,50 @@ void showMenu(int clientfd) {
         }
       }
       if(control == 0) {
-        printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-        printf("\n\n\nNo hay ninguna coincidencia para la busqueda realizada!\n\n\n");
+        printf("\n---- Mensaje ----");
+        printf("\n\n\nNo hay ninguna coincidencia para la busquedad realizada\n\n\n");
       }
 
     } else {
       r = send(clientfd, &error, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 12");
+        perror("Send perror registro busquedad");
         exit(-1);
       }
-      printf("\n:::::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-      printf("\n\n\n- Lo sentimos, aun no hay registros en el sistema\n\n\n");
+      printf("\n---- Mensaje ----");
+      printf("\n\n\nLo sentimos, aun no hay registros en el sistema \n\n\n");
     }
 
     free(dog);
 
   }
-
-
-
-
-  else if(sel == 5) {            //opcion de salir del sistema
-    printf("\n\n\n>> Saliendo del sistema.........................................................\n");
+//exit client, close cosket
+  else if(sel == 5) {           
+    printf("\n\n\n--saliendo del sistema\n");
     sleep(1);
-    printf(">> Finalizando conexion con el servidor.........................................\n");
-    printf(">> Cerrando socket..............................................................\n");
-    printf(">> STATUS: Successfully completed...............................................\n");
+    printf("finalizando coneccion con el servidor\n");
+    printf("cerrando socket\n");
+    printf("----STATUS: Successfully completed----\n");
     sleep(1);
-    printf(">> OK...........................................................................\n\n\n");
+    printf("----Salida exitosa----\n\n\n");
     exit_ = -1;
     r = send(clientfd, &exit_, sizeof(int), 0);
     if(r == -1) {
-      perror("Send error 13");
+      perror("Send perror exit");
       exit(-1);
     }
     close(clientfd);
     exit(-1);
   } else {
-    printf("\n:::::::::::::::::::::::::::::::::::::::::::::MENSAJE DEL SISTEMA::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-    printf("\n\nIngrese una opcion correcta!!....\n\n\n");
+    printf("\n---- Mensaje ----");
+    printf("\n\nIngrese una opcion correcta\n\n\n");
     r = send(clientfd, &error, sizeof(int), 0);
     if(r == -1){
-      perror("Send error 14");
+      perror("Send perror opcion");
       exit(-1);
     }
   }
-  printf("\n\nPor favor pulse cualquier tecla para volver al menu principal...");
+  printf("\n\n--Por favor pulse cualquier tecla para volver al menu principal--");
   fflush(stdout);
   char b;
   keypress(b);
@@ -421,6 +383,5 @@ int main() {
     system("clear");
     showMenu(clientfd);
   }
-
   return 0;
 }
