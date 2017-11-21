@@ -2,33 +2,38 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include "pthread.h"
-#define PORT 3566
-#define MAX_CLIENTS 16
+# include <stdio.h>
+# include <stdlib.h>
+# include <strings.h>
+# include <string.h>
+# include <time.h>
+# include <unistd.h>
 
-//variables globales para manejar el numero de clientes conectados al server, y la escritura en los archivos .dat y .log
+#define PORT 3566
+#define MAX_CLIENTS 32
+
+
 int total_clients = 0;
+//log and dat global 
 int writeLog = 0, writeInFile = 0;
 
 void logWrite(int type,char registry[32],int socket);
 void *clientManager(void *socket);
-
-//funcion de gestion del servidor
+//server operetion
 void server() {
 
   struct sockaddr_in server, client;
   int serverSocket, r, optval, s;
   socklen_t optlen = sizeof(optval);
   socklen_t size = sizeof(struct sockaddr_in);
-  pthread_t hilo;
+  pthread_t hilo; //instance thearth
 
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   if(serverSocket == -1) {
-    perror("Socket creation error");
+    perror("Socket perror creacion");
     exit(-1);
   }
-
-  //llenar campos para la conexion
+//complete information conection
   server.sin_family = AF_INET;
   server.sin_port = htons(PORT);
   server.sin_addr.s_addr = INADDR_ANY;
@@ -36,13 +41,13 @@ void server() {
 
   r = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &optval, optlen);
   if(r == -1) {
-    perror("Setsockopt error");
+    perror("Setsockopt perror");
     exit(-1);
   }
 
   r = bind(serverSocket, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
   if(r == -1) {
-    perror("Bind error ");
+    perror("Bind perror ");
     exit(-1);
   }
 
@@ -53,28 +58,27 @@ void server() {
 
     r = listen(serverSocket, MAX_CLIENTS);
     if(r == -1) {
-      perror("Listen error ");
+      perror("Listen perror ");
       exit(-1);
     }
 
     r = accept(serverSocket, (struct sockaddr*)&client, (socklen_t*)&size);
     if(r == -1) {
-      perror("Accept error ");
+      perror("Accept perror ");
       exit(-1);
     }
-
-    //creacion del hilo para gestionar la comunicacion con el cliente
+  //comunication thread with client
     int s = pthread_create(&hilo, NULL, (void*)clientManager, (void*)&r);
-    total_clients ++; //se aumenta el numero de clientes conectados al servidor
-    sleep(2);
+    total_clients ++; 
+        sleep(2);
     if(s != 0) {
-      perror("Thread creation error ");
+      perror("Thread perror creacion");
       exit(-1);
     }
   }
 }
 
-//rutina que ejecuta cada hilo creado para gestionar la comunicacion con el cliente
+//thread create to manage comunication with a client
 void *clientManager(void *socket) {
   int serverfd = *(int*)socket;
   int r, option, flag = 1, verification = 1, validation = 1, total_reg, num_reg, val;
@@ -82,66 +86,63 @@ void *clientManager(void *socket) {
   FILE* f;
 
   while(verification == 1) {
-    if(writeInFile == 0) {    //se puede escribir en el archivo .dat porque ningun otro hilo lo esta haciendo
+    //if dont open file dat, write in file
+    if(writeInFile == 0) { 
       writeInFile = 1;
       verification = 0;
     }
   }
 
   f = fopen(file, "r+");
-  // se verifica la existencia del archivo, si no existe, se crea
+ //if exist file, else create new file
   if(f == NULL) {
     int zero = 0, r;
     f = fopen(file, "w");
-    if(f == NULL) {  // Validamos errores
-      perror("fopen error clientManager");
-    }
-    r = fseek(f, 0, SEEK_SET); // se situa el indicador de pos. al inicio del archivo para leer el num de registros
+    if(f == NULL) {  
+      perror("fopen perror clientManager");
+    }//indicator is located in the first row and read
+    r = fseek(f, 0, SEEK_SET); 
     if(r != 0) {
-      perror("fseek error clientManager");
+      perror("fseek perror clientManager");
       exit(-1);
     }
     fwrite(&zero, sizeof(int), ELEMENTS, f);
     r = fclose(f);
     if (r != 0) {
-      perror("error fclose clientManager");
+      perror("perror fclose clientManager");
       exit(-1);
     }
   }
   while(flag == 1) {
     r = recv(serverfd, &option, sizeof(int), 0);
     if(r != sizeof(int)) {
-      perror("Recv Error 1 ");
+      perror("Recv perror");
       exit(-1);
     }
 
 
 
-
-    if(option == 1) {          //opcion de ingresar registro
+    //option enter register
+    if(option == 1) {  
       struct dogType *dog;
       dog = malloc(sizeof(struct dogType));
       r = recv(serverfd, dog, sizeof(struct dogType), 0);
       if(r != sizeof(struct dogType)) {
-        perror("Recv Error 2 ");
+        perror("Recv perror ingresa registro");
         exit(-1);
       }
-
       logWrite(1, dog->name, serverfd);
       writeRegistry(dog);
       r = send(serverfd, &validation, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 1");
+        perror("Send perror ingresa registro");
         exit(-1);
       }
       free(dog);
 
     }
-
-
-
-
-    else if (option == 2) {          //opcion de ver registro
+    //option view register
+    else if (option == 2) {  
 
       struct dogType *dog;
       bool want_clin_hist;
@@ -151,13 +152,13 @@ void *clientManager(void *socket) {
 
       r = send(serverfd, &total_reg, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 2");
+        perror("Send perror ver registro");
         exit(-1);
       }
-
-      r = recv(serverfd, &num_reg, sizeof(int), 0); //recibe el registro a consultar
+      //receive register
+      r = recv(serverfd, &num_reg, sizeof(int), 0);
       if(r != sizeof(int)) {
-        perror("Recv Error 3 ");
+        perror("Recv Error recibir registro");
         exit(-1);
       }
       if(num_reg != -1) {
@@ -166,45 +167,46 @@ void *clientManager(void *socket) {
         logWrite(2, buffer, serverfd);
         r = send(serverfd, dog, sizeof(struct dogType), 0);
         if(r == -1) {
-          perror("Send error 3");
+          perror("Send perror recibir registro");
           exit(-1);
         }
 
         r = recv(serverfd, &want_clin_hist, sizeof(bool), 0);
         if(r != sizeof(bool)) {
-          perror("Recv Error 4 ");
+          perror("Recv perror serverfd");
           exit(-1);
         }
 
         if(want_clin_hist) {
           char s[100];
           strcpy(s, getClinicalHistoryName(num_reg, dog));
-
-          while(!isClinicalHistoryAvailable(s)) { //Mientras que la historia cínica esté ocupada, espere
+          //while the cynical story is busy, wait
+          while(!isClinicalHistoryAvailable(s)) { 
             r = send(serverfd, &fileSize, sizeof(int), 0);
-            //printf("No está disponible\n");
             sleep(1);
           }
 
           FILE *a = fopen(s, "r");
           fseek(a, 0, SEEK_END);
-          fileSize = ftell(a) -1;         // obtiene el tamaño del archivo (se resta 1 por el campo de validación)
-          fseek(a, 1, SEEK_SET);          // posiciona el puntero al inicio (comienza desde 1 por el campo de validación)
-          r = send(serverfd, &fileSize, sizeof(int), 0); //envia el tamaño de la historia clinica
-          //printf("tamaño antes de enviarlo: %d\n", fileSize);
-
-          if(fileSize != 0) { //envia la historia clinica caracter por caracter
+          //get the file size, -1 from validation field
+          fileSize = ftell(a) -1;  
+             //position pointer, first from 1 because validation   
+          fseek(a, 1, SEEK_SET);       
+          //sent tama clinic history
+          r = send(serverfd, &fileSize, sizeof(int), 0); 
+     if(fileSize != 0) { 
+      //sent history character by character 
             char tmp;
             for (i = 0; i < fileSize; i++) {
               r = fread(&tmp, 1, 1, a);
               if(r != ELEMENTS) {
                 printf("r = %d\n", r);
-                perror("fread error server 2");
+                perror("fread perror server");
                 exit(-1);
               }
               r = send(serverfd, &tmp, sizeof(char), 0);
               if(r == -1) {
-                perror("Send error 4");
+                perror("Send perror");
                 exit(-1);
               }
             }
@@ -214,40 +216,39 @@ void *clientManager(void *socket) {
             perror("error fclose server");
             exit(-1);
           }
-
-
-          a = fopen(s, "w+"); //como no existe, crea la historia clinica
+          //donts exist history, create 
+          a = fopen(s, "w+"); 
           if(a == NULL) {
-            perror("error fopen server 2");
+            perror("error fopen server historia clinica");
             exit(-1);
           }
           bool available = false;
+          //comprovate open
           r = fwrite(&available, sizeof(bool), 1, a);
-          //printf("La historia clinica %s está ocupada\n", s);
           if(r != 1) {
-            perror("error fwrite server 2");
+            perror("error fwrite server comprovacion");
             exit(-1);
           }
           r = fclose(a);
           if(r != 0) {
-            perror("error fclose server 2");
+            perror("error fclose server comprovacion");
             exit(-1);
           }
-
-          r = recv(serverfd, &fileSize, sizeof(int), 0); //recibe el tamaño de la historia clinica
+           //recives size  histoy 
+          r = recv(serverfd, &fileSize, sizeof(int), 0);
           char clinicalHistory[fileSize];
 
           char command[100];
           strcpy(command, "rm ");
           strcat(command, s);
           system(command);
-
-          if(fileSize != 0) { //lee la historia clinica caracter por caracter
+          //read history character by character
+          if(fileSize != 0) { 
             char tmp;
             for (i = 0; i < fileSize; i++) {
               r = recv(serverfd, &tmp, sizeof(char), 0);
               if(r != sizeof(char)) {
-                perror("Recv error 4");
+                perror("Recv error comprovacion");
                 exit(-1);
               }
               clinicalHistory[i] = tmp;
@@ -259,20 +260,17 @@ void *clientManager(void *socket) {
       free(dog);
 
     }
-
-
-
-
-    else if (option == 3) {          //opcion de borrar registro
+   //option delete register
+    else if (option == 3) {       
       total_reg = calculateNumberRegistrys();
       r = send(serverfd, &total_reg, sizeof(int), 0);
       if(r == -1) {
-        perror("Send error 4");
+        perror("Send error delete");
         exit(-1);
       }
       r = recv(serverfd, &num_reg, sizeof(int), 0);
       if(r != sizeof(int)) {
-        perror("Recv Error 4 ");
+        perror("Recv Error delete ");
         exit(-1);
       }
       if(num_reg != -1) {
@@ -282,34 +280,31 @@ void *clientManager(void *socket) {
         sprintf(buffer, "%d", num_reg);
         r = send(serverfd, &validation, sizeof(int), 0);
         if(r == -1){
-          perror("Send error 5");
+          perror("Send error deleteClinicalHistory");
           exit(-1);
         }
         logWrite(3, buffer, serverfd);
       }
 
     }
-
-
-
-
-    else if (option == 4) {          //opcion de buscar registro
+     //option search register
+    else if (option == 4) { 
 
       total_reg = calculateNumberRegistrys();
       r = send(serverfd, &total_reg, sizeof(int), 0);
       if(r == -1){
-        perror("Send error 6");
+        perror("Send error search");
         exit(-1);
       }
       r = recv(serverfd, &num_reg, sizeof(int), 0);
       if(r != sizeof(int)) {
-        perror("Recv Error 5");
+        perror("Recv Error search");
         exit(-1);
       }
       if(num_reg != -1) {
         r = recv(serverfd, buffer, sizeof(buffer), 0);
         if(r != sizeof(buffer)) {
-          perror("Recv Error 6 ");
+          perror("Recv Error search ");
           exit(-1);
         }
         searchRegistry(buffer, serverfd);
@@ -317,16 +312,13 @@ void *clientManager(void *socket) {
       }
 
     }
-
-
-
-
-    else if(option == 5) {            //opcion de salir del sistema
+    //option exit close sockts
+    else if(option == 5) {           
       total_clients--;
       sleep(3);
       r = recv(serverfd, &val, sizeof(int), 0);
       if(r != sizeof(int)) {
-        perror("Recv Error 7 ");
+        perror("Recv Error close ");
         exit(-1);
       }
       if(val == -1) {
@@ -342,29 +334,29 @@ void *clientManager(void *socket) {
     writeInFile = 0;
 
   }
-
-  close(serverfd); //se cierra el socket que estaba comunicandose con el cliente
+//close sockets client
+  close(serverfd); 
 
 }
-
-//funcion para la gestion del archivo .log
-void logWrite(int type, char registry[32], int socket) { //types 1 - Insercion, 2 - Lectura, 3 - Borrado, 4 - Busqueda
+//fution flie log
+void logWrite(int type, char registry[32], int socket) { 
   int verification = 1, r;
 
   while(verification == 1) {
-    if(writeLog == 0){ //se puede escribir porque ningun proceso tiene abierto el archivo .log
+    //verefication if log open
+    if(writeLog == 0){ 
       writeLog = 1;
       verification = 0;
     }
   }
 
-  //se abre el archivo .log en modo 'append'
+  //open log in append
   FILE *fileLog = fopen("serverDogs.log", "a");
   if(fileLog == NULL) {
     perror("Error al abrir o crear el archivo log: ");
     exit(-1);
   }
-  //se obtiene la fecha, hora y la IP del cliente
+  //Ip client and date time 
   time_t timer;
   struct tm* tm_info;
   char date[26];
@@ -372,7 +364,7 @@ void logWrite(int type, char registry[32], int socket) { //types 1 - Insercion, 
   tm_info = localtime(&timer);
   strftime(date, 26, "%Y:%m:%d %H:%M:%S", tm_info);
 
-  //se recoge la informacion del cliente
+  //take sistem information
   struct sockaddr_storage addr;
   char clientip[INET_ADDRSTRLEN];
   socklen_t len = sizeof addr;
@@ -380,8 +372,7 @@ void logWrite(int type, char registry[32], int socket) { //types 1 - Insercion, 
   struct sockaddr_in *s = (struct sockaddr_in *) &addr;
   inet_ntop(AF_INET, &s->sin_addr, clientip, sizeof clientip);
   char option[15];
-
-  //se guarda en la cadena option el tipo de operacion que se esta realizando
+  //save chain
   if(type == 1) {
     strcpy(option, "Insercion");
   } else if(type == 2) {
@@ -392,12 +383,12 @@ void logWrite(int type, char registry[32], int socket) { //types 1 - Insercion, 
     strcpy(option, "Busqueda");
   }
 
-  //Se guarda toda la informacion de la operacion en el archivo .log
+  //save information in file log
   r = fprintf(fileLog, "|%s|	Cliente [%s] |%s| |%s|\n", date, clientip, option, registry);
   if(r < 1) {
     perror("Fprintf error");
   }
-  //se cierra el archivo para que otros procesos puedan escribir en el
+  //close file log because proceses wait write 
   fclose(fileLog);
 
   writeLog = 0;
