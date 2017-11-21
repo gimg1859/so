@@ -1,7 +1,7 @@
 User manual
 
 FIRST STEPS
--Compilate generateDogs.c, you can use in linux console the comand gcc generateDogs.c -o generateDogs
+-Compilate generateDogs.c, you can use in linux console the comand gcc generateDogs.c -o generateDogs so/src/generateDogs.c (remenbmer neet namePets.txt)
 -Execute program, you can use ./generateDogs, after execute, will be generate in the project root directory an archive of approximately 1GB (10 milion stuctures)
--Complilate p2-dogServer.c and p2-dogClient.c, in linux console the comand is gcc p2-dogServer.c -o p2-dogServer and gcc p2-dogClient.c -0 p2-dogServer
+-Complilate p2-dogServer.c and p2-dogClient.c, in linux console the comand is gcc p2-dogServer.c -o p2-dogServer and gcc p2-dogClient.c -0 p2-dogServer  so/src/p2-dog...... .c
 -Execute p2-dogServer, after p2-dogClient in other console (if you want to run on the same machine, please change ip conection and port example 189.00.01 and port 3566 )
